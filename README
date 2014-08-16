@@ -1,0 +1,122 @@
+================================================================================
+    dec2bin.c   |   Version 1.4     |   FreeBSD License     |   2014-04-14
+    James Hendrie                   |   hendrie.james@gmail.com
+================================================================================
+
+    1.  Description
+    2.  Installation / Uninstallation
+    3.  Usage
+    4.  Examples
+
+
+
+----------------------------------------
+    1.  Description
+----------------------------------------
+
+    dec2bin (working title) is a program that will convert decimal numbers to
+    their binary equivalents.  It can also convert to hexadecimal or octal if
+    you'd like it to do that.  If you're feeling really fancy, you can also
+    switch on 'text conversion mode' to convert from ASCII characters to their
+    binary/decimal/octal/whatever equivalents.
+
+    This is the companion to another program I've written recently, named
+    bin2dec; that program converts binary numbers to decimal.
+
+
+
+----------------------------------------
+    2.  Installation / Uninstallation
+----------------------------------------
+
+    To install, compile the program with 'make'.  It shouldn't take long, though
+    obviously you'll need a C compiler.  If you're on any modern UNIX or Linux
+    distro you should already have one, and if you don't, shame on you.  Go
+    install GCC (gcc.gnu.org) right away.
+
+    After you've compiled the program, install it to your system by issuing
+    'make install' with superuser privileges.
+
+    To remove the program and all its accessories, return to the directory to
+    which you originally extracted the tarball (or whichever directory has the
+    Makefile for this program) and type 'make uninstall', again with superuser
+    privileges.
+
+
+    Alternately, if you're on a Slackware system, you can install the Slackware
+    package for this program using the in-built package manager.  You should be
+    able to find it in the same place you found this tarball.
+
+
+
+----------------------------------------
+    3.  Usage
+----------------------------------------
+
+Usage:  dec2bin [OPTIONS] NUMBER[s]
+
+Options:
+    -h or --help
+        Print the help text
+    --version
+        Print version and author info
+    -   Pipe numbers from stdin (not supplying any args will also work)
+
+    -v  Print the number type (DEC, HEX, OCT) before the number (verbosity)
+    -b  Binary output (default)
+    -d  Print decimal output
+    -o  Octal output
+    -x  Hexadecimal output
+    -X  Hex output with capital letters
+    -a  Precise hexadecimal output (printf %a, see 'man 3 printf for more info)
+    -A  Precise hexadecimal output with capital letters
+    -t  Switch on text conversion mode
+    -l  Print a line between sections of output
+    -s  Print output in 4-character sections, space-separated.  If text
+        conversion mode is on, this will instead separate each converted
+        character value by 4 spaces.
+
+
+
+----------------------------------------
+    4.  Examples
+----------------------------------------
+
+dec2bin 2
+    This will print 10 to your terminal.
+
+dec2bin 15
+    This will print 1111 to your terminal.
+
+dec2bin 15 16 728110
+    This will print the numbers 1111, 10000 and 10110001110000101110 to your
+    terminal, each on its own line.
+
+dec2bin -oxb 15 16
+    This will print the octal, binary and hexadecimal equivalents to 15 and 16
+    to your terminal.
+
+dec2bin -vXbsl 1029 18349
+    This will print the binary and hexadecimal (with capital letters)
+    equivalents to 1029 and 18349 to your terminal, separated into 4-character
+    sections with each number's equivalents separated by a new line.  Each line
+    of text will also, at the front of it, have its type of output specified (in
+    this case, either HEX or BIN).
+
+echo 1029 18349 | dec2bin -vls -Xb -
+    This will result in the same output as above, only in this instance the
+    input has been piped from stdin and, just for fun, I've arranged the
+    arguments differently.
+
+dec2bin -t "hello"
+    Convert the string "hello" to 0110100001100101011011000110110001101111
+
+dec2bin -ts "hello"
+    Do the same, while separating each character value by 4 spaces as shown:
+    01101000    01100101    01101100    01101100    01101111
+
+echo -n "Hello there" | dec2bin -tbvxl
+    Convert each letter in the string to both a binary and a hexadecimal value.
+    The verbosity switch will print the letter, the type of conversion (HEX,
+    BIN, etc.) and the value.  If you don't include the '-n' flag for the echo
+    command, dec2bin will also convert the trailing newline character.
