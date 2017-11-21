@@ -1,9 +1,12 @@
 /*******************************************************************************
- * dec2bin.c    |   version 1.4     |   FreeBSD License     |   2014-04-20
+ * dec2bin.c    |   version 1.5     |   FreeBSD License     |   2017-11-20
  * James Hendrie                    |   hendrie.james@gmail.com
  *
  *  Description:
  *      Converts decimal numbers (positive integers) to binary numbers
+ *
+ *  Limitations:
+ *      Can't handle numbers greater than (1e16) - 2
  ******************************************************************************/
 #include <stdio.h>
 #include <stdlib.h>
@@ -12,6 +15,7 @@
 #include <ctype.h>
 
 #define MAX_STRING_LENGTH 256
+#define VERSION "1.5"
 
 
 /*  ------------    Global Options  --------------- */
@@ -27,6 +31,7 @@ int totalConversions;       //  Total number of conversion types to perform
 int sections;               //  Whether to use sections / how many to use
 int lineSpacing;            //  Whether to use extra line spacing
 int verbose;                //  Verbosity
+int bigEndian;              //  Big endian (1=yes, default)
 
 /*  Optstring
  *      v   verbosity
@@ -37,12 +42,14 @@ int verbose;                //  Verbosity
  *      a   precise hex (converted from double without casting)
  *      A   same as above, but with captial letters
  *      o   octal
+ *      e   little endian
+ *      E   big endian (default)
  *      t   turns on 'text mode' conversion
  *      s   sections; optarg is number of chars between spaces.  Default is 0
  *      l   line spacing; lots of output separates results with an extra line
  *      h   help
  */
-static const char *optString = "vdbxXaAoslht";
+static const char *optString = "vdbxXaAoslhteE";
 
 
 
@@ -82,7 +89,7 @@ void print_help( FILE *fp )
     fprintf(fp, "\nOptions:\n");
     fprintf(fp, "  -h or --help\tPrint this help text\n");
     fprintf(fp, "  --version\tPrint version and author info\n");
-    fprintf(fp, "  -\t\tPipe from stdin (absence of args will also work)\n");
+    fprintf(fp, "  -\t\tRead from stdin (absence of args will also work)\n");
     fprintf(fp, "  -v\t\tPrint number type before number (verbosity)\n");
     fprintf(fp, "  -b\t\tPrint binary (default)\n");
     fprintf(fp, "  -d\t\tPrint decimal\n");
@@ -91,6 +98,8 @@ void print_help( FILE *fp )
     fprintf(fp, "  -X\t\tPrint hexadecimal with capital letters\n");
     fprintf(fp, "  -a\t\tPrecise hexadecimal (printf %%a, see 'man 3 printf')\n");
     fprintf(fp, "  -A\t\tPreceise hexadecimal with capital letters\n");
+    fprintf(fp, "  -e\t\tPrint binary numbers as little-endian\n" );
+    fprintf(fp, "  -E\t\tPrint binary numbers as big-endian (default)\n" );
     fprintf(fp, "  -t\t\tSwitch on 'text conversion' mode\n");
     fprintf(fp, "  -l\t\tPrint a line between sections of output\n");
     fprintf(fp, "  -s\t\tPrint in 4-character sections, space-separated\n");
@@ -101,7 +110,7 @@ void print_help( FILE *fp )
 
 void print_version(void)
 {
-    printf("dec2bin version 1.4\n");
+    printf("dec2bin version %s\n", (VERSION) );
     printf("James Hendrie - hendrie.james@gmail.com\n");
 }
 
@@ -110,7 +119,7 @@ void print_version(void)
  *
  *  multiply [multiple] to the power of [power]
  */
-double power_of( int multiple, int power )
+double power_of( double multiple, int power )
 {
     /*  If we're multiplying to the power of zero */
     if( power == 0 )
@@ -121,9 +130,7 @@ double power_of( int multiple, int power )
     /*  For loop; make my number, GROW!!!! */
     int temp = 0;
     for( temp = 1; temp < power; ++temp )
-    {
-        current = current * multiple;
-    }
+        current *= multiple;
 
     /*  Return finished number */
     return( current );
@@ -196,6 +203,8 @@ void print_number_string( char *s, int arraySize )
 }
 
 
+
+
 /*  ---------------------   create_binary_string     -----------------------
  *
  *  takes decimal value [userNumber] and creates a string of binary numbers
@@ -212,22 +221,35 @@ char* create_binary_string( char *s, int arraySize, double *userNumber )
     /*
      * Go through the string and, where appropriate, add a 1 or 0
      */
-    for( i = 0; i < arraySize+1; ++i )
+
+    //  If we're going big-endian
+    if( bigEndian == 1 )
     {
-        /*  If our result is too high, we go further to the right */
-        if( power_of( 2, multiple) > *userNumber )
+        for( i = 0; i < arraySize+1; ++i )
         {
-            s[i] = '0';
-        }
+            /*  If our result is too high, we go further to the right */
+            if( power_of( 2.0f, multiple) > *userNumber ) { s[i] = '0'; } 
 
-        /*  Otherwise, we fill in the 'blanks' with 1s */
-        else
+            /*  Otherwise, we fill in the 'blanks' with 1s */
+            else { s[i] = '1'; *userNumber -= power_of( 2.0f, multiple ); }
+
+            --multiple;     //  Move to the right
+        }
+    }
+
+    //  Otherwise, if little-endian
+    else
+    {
+        for( i = ( arraySize - 1 ); i >= 0; --i )
         {
-            s[i] = '1';
-            *userNumber -= power_of( 2, multiple );
-        }
+            /*  If our result is too high, we go further to the right */
+            if( power_of( 2.0f, multiple) > *userNumber ) { s[i] = '0'; }
 
-        --multiple;     //  Move to the right
+            /*  Otherwise, we fill in the 'blanks' with 1s */
+            else { s[i] = '1'; *userNumber -= power_of( 2.0f, multiple ); } 
+
+            --multiple;     //  Move to the right
+        }
     }
 
     /*
@@ -236,10 +258,7 @@ char* create_binary_string( char *s, int arraySize, double *userNumber )
      */
     if( *userNumber != 0 )      //  Make sure user didn't actually give us a 0
     {
-        while( s[0] == '0' )
-        {
-            ++s;    //  Increment string pointer
-        }
+        while( s[0] == '0' ) { ++s; }
     }
 
     /*  Send to print_number_string function */
@@ -272,9 +291,7 @@ int string_printer( double *userNumber )
      * Create a string pointer, and then allocate a number of bytes to it
      * according to the value given by the previous function
      */
-    char *s = NULL;
-
-    s = malloc( arraySize );
+    char *s = malloc( arraySize );
     if( s == NULL )
     {
         mem_error("Main:  Allocating memory to string buffer");
@@ -579,6 +596,7 @@ int main( int argc, char *argv[] )
     lineSpacing = 0;
     textMode = 0;
     totalConversions = 0;
+    bigEndian = 1;
 
     /*  Do the optString thing */
     opt = getopt( argc, argv, optString );
@@ -626,9 +644,16 @@ int main( int argc, char *argv[] )
                 print_help(stdout);
                 return(0);
                 break;
-            case 't':
+            case 't':   //  Turn on textmode conversion
                 textMode = 1;
                 break;
+            case 'e':   //  little endian
+                bigEndian=0;
+                break;
+            case 'E':   //  big endian
+                bigEndian=1;
+                break;
+
             default:
                 /*  Won't be seeing this, disregard */
                 break;

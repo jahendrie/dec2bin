@@ -1,12 +1,14 @@
 ================================================================================
-    dec2bin.c   |   Version 1.4     |   FreeBSD License     |   2014-04-14
-    James Hendrie                   |   hendrie.james@gmail.com
+    dec2bin.c   |   Version 1.5     |   FreeBSD License     |   2017-11-20
+    James Hendrie                   |   hendrie dot james at gmail dot com
 ================================================================================
 
     1.  Description
     2.  Installation / Uninstallation
     3.  Usage
     4.  Examples
+    5.  Known limitations
+    6.  Contact, etc.
 
 
 
@@ -16,9 +18,7 @@
 
     dec2bin (working title) is a program that will convert decimal numbers to
     their binary equivalents.  It can also convert to hexadecimal or octal if
-    you'd like it to do that.  If you're feeling really fancy, you can also
-    switch on 'text conversion mode' to convert from ASCII characters to their
-    binary/decimal/octal/whatever equivalents.
+    you'd like it to do that.
 
     This is the companion to another program I've written recently, named
     bin2dec; that program converts binary numbers to decimal.
@@ -60,21 +60,21 @@ Options:
         Print the help text
     --version
         Print version and author info
-    -   Pipe numbers from stdin (not supplying any args will also work)
 
     -v  Print the number type (DEC, HEX, OCT) before the number (verbosity)
     -b  Binary output (default)
-    -d  Print decimal output
+    -d  Decimal output
     -o  Octal output
     -x  Hexadecimal output
     -X  Hex output with capital letters
     -a  Precise hexadecimal output (printf %a, see 'man 3 printf for more info)
     -A  Precise hexadecimal output with capital letters
-    -t  Switch on text conversion mode
+    -s  Print output in 4-character sections, space-separated
     -l  Print a line between sections of output
-    -s  Print output in 4-character sections, space-separated.  If text
-        conversion mode is on, this will instead separate each converted
-        character value by 4 spaces.
+    -t  Turn on textmode conversion (convert from ASCII to binary)
+    -e  Specify little-endian printing
+    -E  Specify big-endian printing (default)
+    -   Read numbers from stdin
 
 
 
@@ -103,20 +103,40 @@ dec2bin -vXbsl 1029 18349
     of text will also, at the front of it, have its type of output specified (in
     this case, either HEX or BIN).
 
+dec2bin -t "pizza"
+    This will convert the ASCII text 'pizza' to a binary number:
+    '0111000001101001011110100111101001100001'.  Combine with '-vl' options
+    for more informative results.
+
 echo 1029 18349 | dec2bin -vls -Xb -
     This will result in the same output as above, only in this instance the
-    input has been piped from stdin and, just for fun, I've arranged the
+    input has been read from stdin and, just for fun, I've arranged the
     arguments differently.
 
-dec2bin -t "hello"
-    Convert the string "hello" to 0110100001100101011011000110110001101111
+cat 'gilgamesh.txt' | dec2bin -t -
+    Annoy your friends by sending them binary epics
 
-dec2bin -ts "hello"
-    Do the same, while separating each character value by 4 spaces as shown:
-    01101000    01100101    01101100    01101100    01101111
 
-echo -n "Hello there" | dec2bin -tbvxl
-    Convert each letter in the string to both a binary and a hexadecimal value.
-    The verbosity switch will print the letter, the type of conversion (HEX,
-    BIN, etc.) and the value.  If you don't include the '-n' flag for the echo
-    command, dec2bin will also convert the trailing newline character.
+
+----------------------------------------
+    5.  Known limitations
+----------------------------------------
+
+    The program can't handle numbers greater than (1e16)-2 (9999999999999998).
+    It also assumes unsigned integers -- i.e., won't work with negatives.
+
+
+
+----------------------------------------
+    6.  Contact, etc.
+----------------------------------------
+
+    Author:
+        James Hendrie
+        hendrie.james@gmail.com
+        hendrie.james@protonmail.com
+
+    Sites:
+        http://www.someplacedumb/net/content/progs
+        https://github.com/jahendrie
+            https://github.com/jahendrie/dec2bin    <-- This program!
